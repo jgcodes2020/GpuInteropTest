@@ -25,16 +25,10 @@ public class IndependentGlControl : CompositionControl
     private uint _depthRbo;
 
     // Option variables
-    private PixelSize _viewportSize;
     private int _glVersionMajor;
     private int _glVersionMinor;
     private GlProfileType _glProfileType;
     private bool _vSync;
-
-    // Option properties
-    public static readonly DirectProperty<IndependentGlControl, PixelSize> ViewportSizeProperty =
-        AvaloniaProperty.RegisterDirect<IndependentGlControl, PixelSize>(nameof(ViewportSize), c => c._viewportSize,
-            (c, value) => c._viewportSize = value);
 
     public static readonly DirectProperty<IndependentGlControl, int> GlVersionMajorProperty =
         AvaloniaProperty.RegisterDirect<IndependentGlControl, int>(nameof(GlVersionMajor), c => c._glVersionMajor,
@@ -53,11 +47,6 @@ public class IndependentGlControl : CompositionControl
             (c, value) => c._vSync = value);
 
     // Option values
-    public PixelSize ViewportSize
-    {
-        get => _viewportSize;
-        set => SetAndRaise(ViewportSizeProperty, ref _viewportSize, value);
-    }
 
     public GlVersion GlVersion => new(_glProfileType, GlVersionMajor, GlVersionMinor);
 
@@ -145,7 +134,7 @@ public class IndependentGlControl : CompositionControl
         if (_queue == null || _glContext == null)
             return;
 
-        _queue.SwapBuffers(ViewportSize);
+        _queue.SwapBuffers(WindowSize);
 
         var curr = _queue.CurrentBuffer;
         // ASSUME that the context is current
@@ -169,7 +158,7 @@ public class IndependentGlControl : CompositionControl
                 _depthRbo = gl.GenRenderbuffer();
                 gl.BindRenderbuffer(RenderbufferTarget.Renderbuffer, _depthRbo);
                 gl.RenderbufferStorage(RenderbufferTarget.Renderbuffer, depthFormat,
-                    (uint) ViewportSize.Width, (uint) ViewportSize.Height);
+                    (uint) WindowSize.Width, (uint) WindowSize.Height);
                 gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, RenderbufferTarget.Renderbuffer, _depthRbo);
             }
             finally

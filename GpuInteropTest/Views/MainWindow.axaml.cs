@@ -26,8 +26,8 @@ public partial class MainWindow : Window, IOpenGLContextService
 
     public PixelSize ViewportSize
     {
-        get => GlControl.ViewportSize;
-        set => GlControl.ViewportSize = value;
+        get => GlControl.WindowSize;
+        set => GlControl.WindowSize = value;
     }
     public bool VSync
     {

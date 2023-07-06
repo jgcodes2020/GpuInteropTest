@@ -10,13 +10,33 @@ namespace GpuInteropTest.Controls;
 public abstract class CompositionControl : Control
 {
     private CompositionSurfaceVisual? _visual;
+    private PixelSize _windowSize;
+
+    public static readonly DirectProperty<CompositionControl, PixelSize> WindowSizeProperty =
+        AvaloniaProperty.RegisterDirect<CompositionControl, PixelSize>(nameof(WindowSize), c => c._windowSize,
+            (c, value) => c._windowSize = value);
+
+    static CompositionControl()
+    {
+        WindowSizeProperty.Changed.Subscribe(evt =>
+        {
+            var @this = ((CompositionControl) evt.Sender);
+
+            if (@this._visual != null)
+                @this._visual.Size = new Vector2(@this._windowSize.Width, @this._windowSize.Height);
+        });
+    }
 
     protected Task? InitTask { get; private set; }
     protected Compositor? Compositor { get; private set; }
     protected CompositionDrawingSurface? Surface { get; private set; }
     protected ICompositionGpuInterop? Interop { get; private set; }
 
-    public PixelSize WindowSize { get; set; }
+    public PixelSize WindowSize
+    {
+        get => _windowSize;
+        set => SetAndRaise(WindowSizeProperty, ref _windowSize, value);
+    }
 
     /// <summary>
     /// Initializes API-specific objects for texture sharing.
