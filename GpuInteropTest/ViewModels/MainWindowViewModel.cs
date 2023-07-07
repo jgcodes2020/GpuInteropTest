@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reactive;
 using System.Threading;
 using Avalonia;
@@ -34,18 +35,30 @@ public class MainWindowViewModel : ViewModelBase
 
     public ReactiveCommand<Unit, Unit> StartOpenGLCommand { get; }
 
+    
+    private const float sinK = (1000.0f) * 2 * ((float) Math.PI);
+
     [DoesNotReturn]
     private void OpenGLRun()
     {
         _openGlContextService.MakeCurrent();
-
         GL gl = GL.GetApi(_openGlContextService.GetProcAddress);
+
+        long t0 = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
         gl.ClearColor(1.0f, 0.5f, 0.0f, 1.0f);
         while (true)
         {
+            long tn = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            float scale = MathF.Sin((tn - t0) * sinK);
+            // sin^2(x) = 1/2 (1 - cos(2x)), which is always >0
+            scale *= scale;
+            gl.ClearColor(1.0f * scale, 0.5f * scale, 0.0f, 1.0f);
+            
             gl.Clear(ClearBufferMask.ColorBufferBit);
             _openGlContextService.SwapBuffers();
         }
+        // ReSharper disable once FunctionNeverReturns
     }
 
     private Thread? _openGLThread;

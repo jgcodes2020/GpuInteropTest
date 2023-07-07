@@ -37,10 +37,6 @@ public partial class MainWindow : Window, IOpenGLContextService
     public void MakeCurrent()
     {
         GlControl.MakeContextCurrent();
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            GlControl.InitRenderLoop();
-        });
     }
 
     public IntPtr GetProcAddress(string sym)
@@ -50,7 +46,6 @@ public partial class MainWindow : Window, IOpenGLContextService
 
     public void SwapBuffers()
     {
-        GlControl.SwapBuffers();
-        Thread.Sleep(50);
+        GlControl.SwapBuffers().Wait();
     }
 }

@@ -19,7 +19,7 @@
     <DockPanel LastChildFill="True">
         <Button Command="{Binding StartOpenGLCommand}" Content="Start OpenGL"/>
         <Border BorderBrush="Fuchsia" BorderThickness="2">
-            <controls:IndependentGlControl Name="GlControl"/>
+            <controls:IndependentGLControl Name="GlControl"/>
         </Border>
     </DockPanel>
 

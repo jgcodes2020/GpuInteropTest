@@ -9,16 +9,14 @@ using Silk.NET.OpenGL;
 namespace GpuInteropTest.Controls;
 
 /// <summary>
-/// A control whose contents are controlled via an external render loop.
+/// A control whose contents are controlled via an external OpenGL render loop.
 /// </summary>
-public class IndependentGlControl : CompositionControl
+public class IndependentGLControl : CompositionControl
 {
     // Composition objects
     private IGlContext? _glContext;
     private IOpenGlTextureSharingRenderInterfaceContextFeature? _sharingFeature;
-    private GlBufferQueue? _queue;
-    private Action _doCompositionUpdate;
-    private bool _updateQueued;
+    private GLBufferQueue? _bufferQueue;
 
     // OpenGL objects
     private uint _renderFbo;
@@ -30,20 +28,20 @@ public class IndependentGlControl : CompositionControl
     private GlProfileType _glProfileType;
     private bool _vSync;
 
-    public static readonly DirectProperty<IndependentGlControl, int> GlVersionMajorProperty =
-        AvaloniaProperty.RegisterDirect<IndependentGlControl, int>(nameof(GlVersionMajor), c => c._glVersionMajor,
+    public static readonly DirectProperty<IndependentGLControl, int> GlVersionMajorProperty =
+        AvaloniaProperty.RegisterDirect<IndependentGLControl, int>(nameof(GlVersionMajor), c => c._glVersionMajor,
             (c, value) => c._glVersionMajor = value);
 
-    public static readonly DirectProperty<IndependentGlControl, int> GlVersionMinorProperty =
-        AvaloniaProperty.RegisterDirect<IndependentGlControl, int>(nameof(GlVersionMinor), c => c._glVersionMinor,
+    public static readonly DirectProperty<IndependentGLControl, int> GlVersionMinorProperty =
+        AvaloniaProperty.RegisterDirect<IndependentGLControl, int>(nameof(GlVersionMinor), c => c._glVersionMinor,
             (c, value) => c._glVersionMinor = value);
 
-    public static readonly DirectProperty<IndependentGlControl, GlProfileType> GlProfileTypeProperty =
-        AvaloniaProperty.RegisterDirect<IndependentGlControl, GlProfileType>(nameof(GlProfileType),
+    public static readonly DirectProperty<IndependentGLControl, GlProfileType> GlProfileTypeProperty =
+        AvaloniaProperty.RegisterDirect<IndependentGLControl, GlProfileType>(nameof(GlProfileType),
             c => c._glProfileType, (c, value) => c._glProfileType = value);
 
-    public static readonly DirectProperty<IndependentGlControl, bool> VSyncProperty =
-        AvaloniaProperty.RegisterDirect<IndependentGlControl, bool>(nameof(VSync), c => c._vSync,
+    public static readonly DirectProperty<IndependentGLControl, bool> VSyncProperty =
+        AvaloniaProperty.RegisterDirect<IndependentGLControl, bool>(nameof(VSync), c => c._vSync,
             (c, value) => c._vSync = value);
 
     // Option values
@@ -74,10 +72,8 @@ public class IndependentGlControl : CompositionControl
         set => SetAndRaise(GlProfileTypeProperty, ref _glProfileType, value);
     }
 
-    public IndependentGlControl()
+    public IndependentGLControl()
     {
-        _doCompositionUpdate = DoCompositionUpdate;
-        _updateQueued = false;
 
         _renderFbo = _depthRbo = 0;
     }
@@ -100,13 +96,15 @@ public class IndependentGlControl : CompositionControl
         _glContext = _sharingFeature.CreateSharedContext(new[] { GlVersion }) ??
                      throw new ApplicationException("Couldn't create shared context");
 
-        _queue = new GlBufferQueue(Interop!, _sharingFeature, _glContext);
+        _bufferQueue = new GLBufferQueue(compositor, interop, surface, _sharingFeature, _glContext);
 
         using (_glContext.MakeCurrent())
         {
             GL gl = GL.GetApi(_glContext.GlInterface.GetProcAddress);
             _renderFbo = gl.GenFramebuffer();
         }
+
+        await SwapBuffers();
     }
 
     /// <inheritdoc/>
@@ -114,10 +112,10 @@ public class IndependentGlControl : CompositionControl
     {
         if (_glContext == null)
             return;
-        if (_queue != null)
+        if (_bufferQueue != null)
         {
-            await _queue.DisposeAsync();
-            _queue = null;
+            await _bufferQueue.DisposeAsync();
+            _bufferQueue = null;
         }
     }
 
@@ -129,24 +127,12 @@ public class IndependentGlControl : CompositionControl
         _glContext?.MakeCurrent();
     }
 
-    public void SwapBuffers()
+    private void InitGLBuffers(GL gl, GLQueuableImage buffer)
     {
-        if (_queue == null || _glContext == null)
-            return;
-        // ASSUME that the context is current
-        var gl = GL.GetApi(_glContext.GlInterface.GetProcAddress);
-        
-        gl.Flush();
-        
-        _queue.SwapBuffers(WindowSize);
-
-        var curr = _queue.CurrentBuffer;
-
         gl.BindFramebuffer(FramebufferTarget.Framebuffer, _renderFbo);
-        // update the depth RBO
         {
             var oldRenderbuffer = (uint) gl.GetInteger(GLEnum.Renderbuffer);
-            var depthFormat = _glContext.Version.Type == GlProfileType.OpenGLES
+            var depthFormat = _glContext!.Version.Type == GlProfileType.OpenGLES
                 ? InternalFormat.DepthComponent16
                 : InternalFormat.DepthComponent;
 
@@ -169,26 +155,32 @@ public class IndependentGlControl : CompositionControl
             }
         }
         
+        // Attach the new buffer to the FBO, and make sure it's working
         gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, GLEnum.Texture2D,
-            curr.TextureObject, 0);
-
+            buffer.TextureObject, 0);
         if (gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != GLEnum.FramebufferComplete)
         {
             throw new ApplicationException("Framebuffer dead");
         }
     }
 
-    private async void DoCompositionUpdate()
+    /// <summary>
+    /// Swaps buffers for the rendering thread.
+    /// </summary>
+    public async Task SwapBuffers()
     {
-        await _queue!.DisplayNext(Surface!);
-        Compositor?.RequestCompositionUpdate(_doCompositionUpdate);
-    }
-
-    public void InitRenderLoop()
-    {
-        if (!_updateQueued && InitTask is { Status: TaskStatus.RanToCompletion })
-        {
-            Compositor?.RequestCompositionUpdate(_doCompositionUpdate);
-        }
+        Console.WriteLine("Swap");
+        if (_bufferQueue == null || _glContext == null)
+            return;
+        
+        // ASSUME that the context is current
+        var gl = GL.GetApi(_glContext.GlInterface.GetProcAddress);
+        
+        gl.Flush();
+        
+        await _bufferQueue.SwapBuffers(WindowSize);
+        var curr = _bufferQueue.CurrentBuffer;
+        
+        InitGLBuffers(gl, curr);
     }
 }
