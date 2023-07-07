@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.OpenGL;
@@ -15,6 +16,7 @@ public class GLBufferQueue : IBufferQueue<GLQueuableImage>
 {
     private Queue<GLQueuableImage> _pendingBuffers;
     private GLQueuableImage? _currentBuffer;
+    private int _disposing;
 
     private Compositor _compositor;
     private ICompositionGpuInterop _interop;
@@ -32,6 +34,7 @@ public class GLBufferQueue : IBufferQueue<GLQueuableImage>
         _glContext = glContext;
         _currentBuffer = null;
         _pendingBuffers = new Queue<GLQueuableImage>();
+        _disposing = 0;
     }
 
     public GLQueuableImage CurrentBuffer
@@ -70,7 +73,7 @@ public class GLBufferQueue : IBufferQueue<GLQueuableImage>
         {
             Console.WriteLine("wait display");
             await Dispatcher.UIThread.Invoke(async () => await DisplayNext(_currentBuffer));
-            if (_currentBuffer.Size == size)
+            if (_currentBuffer.Size == size && _disposing == 0)
             {
                 _pendingBuffers.Enqueue(_currentBuffer);
                 Console.WriteLine("return");
@@ -82,7 +85,11 @@ public class GLBufferQueue : IBufferQueue<GLQueuableImage>
             }
         }
         // pull new buffer from incoming queue
-        if (_pendingBuffers.Count < 3)
+        if (_disposing != 0)
+        {
+            ; // absolutely nothing
+        }
+        else if (_pendingBuffers.Count < 3)
         {
             Console.WriteLine("new");
             _currentBuffer = new GLQueuableImage(size, _glSharing, _glContext);
@@ -95,8 +102,16 @@ public class GLBufferQueue : IBufferQueue<GLQueuableImage>
     }
 #pragma warning restore CS4014
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        throw new System.NotImplementedException();
+        Interlocked.Exchange(ref _disposing, 1);
+        var waitList = new List<Task>();
+        // queue all into a list, then wait on all of them simultaneously
+        if (_currentBuffer != null)
+            waitList.Add(_currentBuffer.DisposeAsync().AsTask());
+        while (_pendingBuffers.Count > 0)
+            waitList.Add(_pendingBuffers.Dequeue().DisposeAsync().AsTask());
+
+        await Task.WhenAll(waitList);
     }
 }
