@@ -133,12 +133,14 @@ public class IndependentGlControl : CompositionControl
     {
         if (_queue == null || _glContext == null)
             return;
-
+        // ASSUME that the context is current
+        var gl = GL.GetApi(_glContext.GlInterface.GetProcAddress);
+        
+        gl.Flush();
+        
         _queue.SwapBuffers(WindowSize);
 
         var curr = _queue.CurrentBuffer;
-        // ASSUME that the context is current
-        var gl = GL.GetApi(_glContext.GlInterface.GetProcAddress);
 
         gl.BindFramebuffer(FramebufferTarget.Framebuffer, _renderFbo);
         // update the depth RBO

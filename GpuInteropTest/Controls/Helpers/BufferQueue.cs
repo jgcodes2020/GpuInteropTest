@@ -95,7 +95,7 @@ public abstract class BufferQueue<TImage> : IAsyncDisposable where TImage : clas
 
     public async Task DisplayNext(CompositionDrawingSurface surface)
     {
-        Console.WriteLine($"Frames pending: {_importingBuffers.Count}");
+        Console.WriteLine($"I: {_importingBuffers.Count} | P: {_pendingBuffers.Count}");
         if (!Dispatcher.UIThread.CheckAccess())
             throw new ApplicationException($"{nameof(DisplayNext)} must be called from the UI thread");
         if (_importingBuffers.Count < 1)
