@@ -36,7 +36,7 @@ public class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> StartOpenGLCommand { get; }
 
     
-    private const float sinK = (1000.0f) * 2 * ((float) Math.PI);
+    private const float freq = MathF.Tau / 2000.0f;
 
     [DoesNotReturn]
     private void OpenGLRun()
@@ -50,7 +50,7 @@ public class MainWindowViewModel : ViewModelBase
         while (true)
         {
             long tn = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            float scale = MathF.Sin((tn - t0) * sinK);
+            float scale = MathF.Sin((tn - t0) * freq);
             // sin^2(x) = 1/2 (1 - cos(2x)), which is always >0
             scale *= scale;
             gl.ClearColor(1.0f * scale, 0.5f * scale, 0.0f, 1.0f);

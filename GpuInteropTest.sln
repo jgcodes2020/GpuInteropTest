@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GpuInteropTest", "GpuInteropTest\GpuInteropTest.csproj", "{15306084-E27B-4B13-9CD1-1F070BBCAF95}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLControlBaseTest", "GLControlBaseTest\GLControlBaseTest.csproj", "{5A101BC3-4FD9-428D-A843-00CB4284F20E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{15306084-E27B-4B13-9CD1-1F070BBCAF95}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15306084-E27B-4B13-9CD1-1F070BBCAF95}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{15306084-E27B-4B13-9CD1-1F070BBCAF95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A101BC3-4FD9-428D-A843-00CB4284F20E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A101BC3-4FD9-428D-A843-00CB4284F20E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A101BC3-4FD9-428D-A843-00CB4284F20E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A101BC3-4FD9-428D-A843-00CB4284F20E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
