@@ -70,7 +70,7 @@ public static class CompositionHelpers
         }
     }
 
-    public static CompositionUpdateAwaitable NextVSync(this Compositor compositor)
+    public static CompositionUpdateAwaitable NextCompositionUpdate(this Compositor compositor)
     {
         return new CompositionUpdateAwaitable(compositor);
     }

@@ -25,7 +25,8 @@ public class GLBufferQueue : IBufferQueue<GLQueuableImage>
     private IGlContext _glContext;
 
 
-    public GLBufferQueue(Compositor compositor, ICompositionGpuInterop interop, CompositionDrawingSurface target, IOpenGlTextureSharingRenderInterfaceContextFeature glSharing, IGlContext glContext)
+    public GLBufferQueue(Compositor compositor, ICompositionGpuInterop interop, CompositionDrawingSurface target,
+        IOpenGlTextureSharingRenderInterfaceContextFeature glSharing, IGlContext glContext)
     {
         _compositor = compositor;
         _interop = interop;
@@ -46,6 +47,7 @@ public class GLBufferQueue : IBufferQueue<GLQueuableImage>
             return _currentBuffer;
         }
     }
+
     public bool VSync { get; set; }
 
     private async Task DisplayNext(GLQueuableImage img)
@@ -54,7 +56,7 @@ public class GLBufferQueue : IBufferQueue<GLQueuableImage>
         try
         {
             if (VSync)
-                await _compositor.NextVSync();
+                await _compositor.NextCompositionUpdate();
             import = img.Import(_interop);
             await import.ImportCompeted;
             await _target.UpdateAsync(import);
@@ -84,6 +86,7 @@ public class GLBufferQueue : IBufferQueue<GLQueuableImage>
                 Console.WriteLine("no return");
             }
         }
+
         // pull new buffer from incoming queue
         if (_disposing != 0)
         {
