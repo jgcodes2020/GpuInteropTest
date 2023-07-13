@@ -34,9 +34,12 @@ public partial class MainWindow : Window, IOpenGLContextService
         get => GlControl.VSync;
         set => GlControl.VSync = value;
     }
+
+    private IDisposable _contextDispose;
+    
     public void MakeCurrent()
     {
-        GlControl.MakeContextCurrent();
+        _contextDispose = GlControl.MakeContextCurrent()!;
     }
 
     public IntPtr GetProcAddress(string sym)
@@ -46,6 +49,10 @@ public partial class MainWindow : Window, IOpenGLContextService
 
     public void SwapBuffers()
     {
+        _contextDispose.Dispose();
         GlControl.SwapBuffers().Wait();
+        MakeCurrent();
     }
+    
+    
 }

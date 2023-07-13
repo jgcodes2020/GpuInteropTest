@@ -122,9 +122,9 @@ public class IndependentGLControl : CompositionControl
     public nint GetProcAddress(string sym) =>
         _glContext == null ? IntPtr.Zero : _glContext.GlInterface.GetProcAddress(sym);
 
-    public void MakeContextCurrent()
+    public IDisposable? MakeContextCurrent()
     {
-        _glContext?.MakeCurrent();
+        return _glContext?.MakeCurrent();
     }
 
     private void InitGLBuffers(GL gl, GLQueuableImage buffer)
